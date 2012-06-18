@@ -1,8 +1,10 @@
 class Movie < ActiveRecord::Base
-	ALL_RATINGS = ["G", "PG", "PG-13", "R"]
-
 	def self.ratings
-		return ALL_RATINGS
+		all_ratings = Array.new
+		self.all.each{ |mov|
+			all_ratings << mov.rating
+		}
+		return all_ratings.uniq.sort
 	end
 
 	def self.filter_on_ratings(ratings)
