@@ -7,18 +7,48 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @ratings = params[:ratings]
-    if params[:ratings] && params[:sort_by]
-      @movies = Movie.find(:all, :order=>params[:sort_by]+' ASC', :conditions => ["rating IN (?)", params[:ratings].keys])
-    elsif params[:ratings]
-      @movies = Movie.find(:all, :conditions => ["rating IN (?)", params[:ratings].keys])
-    elsif params[:sort_by]
-      @movies = Movie.find(:all, :order=>params[:sort_by]+' ASC')
-    else
-      @movies = Movie.all
-    end
-
     @all_ratings = Movie.ratings
+    @ratings = params.has_key?(:ratings) ? params[:ratings] : Hash.new
+    @sort_by = params.has_key?(:sort_by) ? params[:sort_by] : false
+
+    puts @all_ratings.inspect
+    puts @ratings.inspect
+    puts @sort_by.inspect
+    puts session.inspect
+
+    if @ratings.empty? && !@sort_by && session[:ratings] && session[:sort_by]
+      flash.keep
+      @ratings = session[:ratings] 
+      redirect_to :action => 'index', :sort_by => session[:sort_by], :ratings => session[:ratings]
+
+    elsif !@ratings.empty? && !@sort_by && session[:sort_by]
+      flash.keep
+      session[:ratings] = @ratings
+      redirect_to :action => 'index', :sort_by => session[:sort_by], :ratings => @ratings
+
+    elsif @ratings.empty? && !@sort_by && session.has_key?(:ratings)
+      flash.keep
+      session[:sort_by] = @sort_by
+      @ratings = session[:ratings]
+      redirect_to :action => 'index', :ratings => session[:ratings]
+
+    elsif !@ratings.empty? && @sort_by
+      session[:sort_by] = @sort_by
+      session[:ratings] = @ratings
+      @movies = Movie.find(:all, :order=>@sort_by+' ASC', :conditions => ["rating IN (?)", @ratings.keys])
+
+    elsif !@ratings.empty?
+      session[:ratings] = @ratings
+      @movies = Movie.find(:all, :conditions => ["rating IN (?)", @ratings.keys])
+
+    elsif @sort_by
+      sesson[:sort_by] = @sort_by
+      @movies = Movie.find(:all, :order=>@sort_by+' ASC')
+
+    else
+      puts 'searching for all'
+      @movies = Movie.all
+    end    
   end
 
   def new
